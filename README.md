@@ -1,6 +1,6 @@
 # solink-tracing-flat-json
 
-This is an open source library that can be used with tracing to log as flattened JSON:
+This is an open source library that can be used with [tracing](https://docs.rs/tracing/0.1.40/tracing/) to log as flattened JSON:
 
 ```rs
     use solink_tracing_flat_json::SolinkJsonFormat;
@@ -13,14 +13,15 @@ This is an open source library that can be used with tracing to log as flattened
     tracing_subscriber::registry().with(log_to_file).init();
 ```
 
-This will serialize a timestamp, all variables in the event, the name of the current span, and all variables in the current and all parent spans. Something like this:
+This will serialize a timestamp, all variables in the event, the name of the current span, and all variables in the current and all parent spans.
+
+An example like this:
 
 ```rs
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     a(42).await;
 }
-
 
 #[instrument]
 async fn a(x: u64) {

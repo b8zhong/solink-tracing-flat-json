@@ -1,21 +1,4 @@
-//! # Solink Tracing Flat JSON
-//!
-//! This is an open source library that can be used with tracing to log as flattened JSON:
-//!
-//! ```rs
-//!     use solink_tracing_flat_json::SolinkJsonFormat;
-//!
-//!     let log_to_file = tracing_subscriber::fmt::layer()
-//!         .event_format(
-//!             SolinkJsonFormat::new()
-//!         )
-//!         .fmt_fields(JsonFields::default());
-//!     tracing_subscriber::registry().with(log_to_file).init();
-//! ```
-//!
-//! This will serialize a timestamp, all variables in the event, the name of the current span,
-//! and all variables in the current and all parent spans.
-//!
+#![doc = include_str!("../README.md")]
 
 use serde::ser::SerializeMap;
 use serde::Serializer;
@@ -32,18 +15,26 @@ use tracing_subscriber::{
 ///
 pub struct SolinkJsonFormat {
     add_timestamp: bool,
+    add_target: bool,
 }
 
 impl SolinkJsonFormat {
     pub fn new() -> Self {
         Self {
             add_timestamp: true,
+            add_target: true,
         }
     }
 
     /// Set whether to add a timestamp to the log.
     pub fn with_timestamp(mut self, add_timestamp: bool) -> Self {
         self.add_timestamp = add_timestamp;
+        self
+    }
+
+    /// Set whether to add the target to the log.
+    pub fn with_target(mut self, add_target: bool) -> Self {
+        self.add_target = add_target;
         self
     }
 }
@@ -84,6 +75,12 @@ where
         serializer_map
             .serialize_entry("level", &meta.level().as_serde())
             .unwrap();
+
+        if self.add_target {
+            serializer_map
+                .serialize_entry("target", meta.target())
+                .unwrap();
+        }
 
         let mut visitor = tracing_serde::SerdeMapVisitor::new(serializer_map);
         event.record(&mut visitor);
@@ -179,7 +176,7 @@ mod tests {
         let data = std::str::from_utf8(&data).unwrap();
         assert_eq!(
             data.trim(),
-            r#"{"level":"INFO","message":"Test","z":10,"span":"child","y":9,"x":7}"#,
+            r#"{"level":"INFO","target":"solink_tracing_flat_json::tests","message":"Test","z":10,"span":"child","y":9,"x":7}"#,
         );
     }
 }
