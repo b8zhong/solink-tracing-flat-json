@@ -179,4 +179,31 @@ mod tests {
             r#"{"level":"INFO","target":"solink_tracing_flat_json::tests","message":"Test","z":10,"span":"child","y":9,"x":7}"#,
         );
     }
+
+    #[tokio::test]
+    async fn should_handle_empty_fields() {
+        let writer = TestWriter::new();
+
+        let log_to_file = {
+            let writer = writer.clone();
+            tracing_subscriber::fmt::layer()
+                .event_format(SolinkJsonFormat::new().with_timestamp(false))
+                .fmt_fields(JsonFields::default())
+                .with_writer(move || writer.clone())
+        };
+
+        let subscriber = log_to_file.with_subscriber(Registry::default());
+        let dispatch = dispatcher::Dispatch::new(subscriber);
+        dispatcher::with_default(&dispatch, || {
+            // No spans, just an event.
+            info!("Event with no fields");
+        });
+
+        let data = writer.data.lock().unwrap();
+        let data = std::str::from_utf8(&data).unwrap();
+        assert_eq!(
+        data.trim(),
+        r#"{"level":"INFO","target":"solink_tracing_flat_json::tests","message":"Event with no fields"}"#,
+    );
+    }
 }
